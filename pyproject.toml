@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "statereturn"
+version = "1.0.0"
+description = "Reference implementation for StateReturn world-state maintenance"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+statereturn-public = "statereturn_public.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = [
+  "statereturn_public",
+  "baseline",
+  "e1core",
+  "e0",
+  "e0_5",
+  "e1",
+  "e2_memory",
+  "e2_next_frame",
+]
+package-dir = { statereturn_public = "src/statereturn_public", baseline = "methods/text/baseline", e1core = "methods/text/e1core", e0 = "methods/visual/e0", e0_5 = "methods/visual/e0_5", e1 = "methods/visual/e1", e2_memory = "methods/visual/e2_memory", e2_next_frame = "methods/visual/e2_next_frame" }
+
+[tool.setuptools.package-data]
+e1core = ["config/*.json"]

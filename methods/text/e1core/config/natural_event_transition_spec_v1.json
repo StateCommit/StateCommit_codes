@@ -1,0 +1,16 @@
+{
+  "spec_version": "wcm-textworld-natural-event-transition/v1",
+  "setting": "Natural-event E1",
+  "input_contract": "Use only event_id, description, outcome_text, and the typed query.",
+  "outcome_rule": {
+    "failure_or_no_change_sentence": "Do not update current tracked state.",
+    "successful_resultative_sentence": "Update only the state fact explicitly expressed by the event description."
+  },
+  "language_semantics": [
+    "A successful description that says an entity was opened or closed establishes its current openness.",
+    "A successful description that says an entity was switched or turned on/off establishes its current power state.",
+    "A successful pickup description establishes that the object is held by agent_1.",
+    "A successful placement description using on establishes on(destination); using inside establishes inside(destination)."
+  ],
+  "provenance_boundary": "This specification exposes no canonical action API, place_effect field, old state, Oracle answer, or simulator metadata."
+}

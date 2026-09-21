@@ -1,0 +1,56 @@
+{
+  "spec_version": "wcm-e1-public-transition/v1",
+  "scope": "E1 Structured Core",
+  "components": {
+    "openness": {
+      "value_type": "string",
+      "legal_values": ["open", "closed"]
+    },
+    "toggle_state": {
+      "value_type": "string",
+      "legal_values": ["on", "off"]
+    },
+    "place": {
+      "value_type": "object",
+      "required_fields": ["kind", "target"],
+      "kind_legal_values": ["on", "inside", "held_by"],
+      "target_type": "stable entity ID"
+    }
+  },
+  "outcomes": {
+    "success_changed": "Apply exactly the transition supported by the event.",
+    "success_no_change": "Do not change tracked world state.",
+    "failure_no_change": "Do not change tracked world state."
+  },
+  "structured_actions": {
+    "OpenObject": {
+      "success_changed": {"component": "openness", "new": "open"}
+    },
+    "CloseObject": {
+      "success_changed": {"component": "openness", "new": "closed"}
+    },
+    "ToggleObjectOn": {
+      "success_changed": {"component": "toggle_state", "new": "on"}
+    },
+    "ToggleObjectOff": {
+      "success_changed": {"component": "toggle_state", "new": "off"}
+    },
+    "PickupObject": {
+      "success_changed": {
+        "component": "place",
+        "new_source": "place_effect"
+      }
+    },
+    "PutObject": {
+      "success_changed": {
+        "component": "place",
+        "new_source": "place_effect"
+      }
+    }
+  },
+  "public_evidence_boundary": [
+    "Use only event_id, action_type, arguments, outcome, and an allowed place_effect.",
+    "A place_effect is present only for successful changed PickupObject and PutObject events.",
+    "Do not infer or use an unobserved old state, an Oracle answer, a simulator snapshot, or a private trace."
+  ]
+}

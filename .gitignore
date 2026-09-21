@@ -1,0 +1,32 @@
+# Credentials and local configuration
+.env
+.env.*
+*.pem
+*.key
+
+# Python and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Data, weights, and generated experiment artifacts
+data/
+datasets/
+checkpoints/
+weights/
+outputs/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.jsonl
+*.mp4
+*.gif

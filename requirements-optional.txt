@@ -1,0 +1,8 @@
+torch>=2.5,<2.8
+torchvision>=0.20,<0.23
+transformers>=4.48,<6
+accelerate>=0.34,<2
+safetensors>=0.5,<1
+numpy>=1.26,<3
+Pillow>=10,<12
+qwen-vl-utils>=0.0.8
