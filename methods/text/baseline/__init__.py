@@ -1,7 +1,5 @@
-"""Memory-management methods for representation-isolated StateReturn Text."""
+"""Public Text StateCommit reference method."""
 
-from .full_history import FullHistory
-from .rolling_summary import RollingSummary
 from .wcm import WorldCodeMemory
 
-__all__ = ["FullHistory", "RollingSummary", "WorldCodeMemory"]
+__all__ = ["WorldCodeMemory"]

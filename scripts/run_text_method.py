@@ -23,11 +23,8 @@ def main() -> int:
     parser.add_argument("--split", choices=("train", "validation", "test"), required=True)
     parser.add_argument("--representation", choices=("structured", "natural"), required=True)
     parser.add_argument("--method", choices=METHODS, required=True)
-    parser.add_argument("--model-path", help="Local frozen text model; required by prompted methods and by path-sanitized IRMem metadata.")
-    parser.add_argument("--irmem-checkpoint")
+    parser.add_argument("--model-path", help="Local frozen text model required by the Text StateCommit reference method.")
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--history-budget-events", type=int, default=4)
-    parser.add_argument("--summary-chars", type=int, default=1600)
     parser.add_argument("--limit-episodes", type=int, help="Non-reportable smoke subset; included in the run manifest.")
     args = parser.parse_args()
     try:
@@ -36,9 +33,6 @@ def main() -> int:
             model_path=args.model_path,
             device=args.device,
             representation=args.representation,
-            history_budget_events=args.history_budget_events,
-            summary_chars=args.summary_chars,
-            irmem_checkpoint=args.irmem_checkpoint,
         )
         result = run_online(
             dataset_root=args.dataset_root,

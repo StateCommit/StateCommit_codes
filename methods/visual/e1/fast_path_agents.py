@@ -1,25 +1,17 @@
-"""Visual WCM Fast-Path agents: grounded code synthesis and auditing.
+"""Visual Fast-Path code synthesis and auditing.
 
-The learned/Qwen visual Grounder is responsible for *perception* and emits a
-typed :class:`GrounderFact`.  The Coding Programmer is separately responsible
-for expressing that fact as restricted executable world code.  The Auditor
-ensures code cannot silently change the visual evidence before the Runtime
-performs its version/type/invariant checks and atomically commits it.
-
-No class in this module imports evaluator labels, simulator metadata, plans,
-or reveal frames.
+An external visual Grounder supplies a typed :class:`GrounderFact`. The
+Programmer expresses that fact as restricted world code, and the Auditor
+checks that the code cannot change its visual evidence before Runtime commit.
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Protocol
 
-from e0_5.grounder_protocol import GrounderFact, GrounderProtocolError, parse_grounder_output
-from e0_5.qwen_grounder import QwenFormalGrounder
-
+from e0_5.grounder_protocol import GrounderFact
 from .visual_wcm_runtime import ActiveStateRuntime, RuntimeViolation, StatePatch
 
 
@@ -47,46 +39,6 @@ class AuditReceipt:
 
     def to_dict(self) -> dict[str, object]:
         return {"verdict": self.verdict, "reason": self.reason}
-
-
-class ParsedQwenVisualGrounder:
-    """Adapt Qwen-VL raw text into the exact same GrounderFact interface."""
-
-    name = "qwen2.5-vl-grounder"
-
-    def __init__(
-        self,
-        *,
-        model_path: str | Path,
-        max_new_tokens: int = 96,
-        prompt_version: str = "v3",
-        use_change_crop: bool = False,
-        device: str = "cuda",
-    ) -> None:
-        self._backend = QwenFormalGrounder(
-            model_path=model_path,
-            max_new_tokens=max_new_tokens,
-            prompt_version=prompt_version,
-            use_change_crop=use_change_crop,
-            device=device,
-        )
-        self.invalid_fact_count = 0
-
-    def ground(
-        self, *, before_image: str | Path, after_image: str | Path, action: str, entity_catalog: Iterable[dict[str, object]]
-    ) -> GrounderFact | None:
-        raw = self._backend.ground(
-            before_image=before_image, after_image=after_image, action=action, entity_catalog=entity_catalog
-        )
-        try:
-            fact = parse_grounder_output(raw, action=action, entity_catalog=entity_catalog)
-        except GrounderProtocolError:
-
-
-
-            self.invalid_fact_count += 1
-            return None
-        return fact
 
 
 def _literal(value: object) -> str:
@@ -126,60 +78,6 @@ class DeterministicWorldCodeProgrammer:
 
     def propose(self, *, fact: GrounderFact, runtime: ActiveStateRuntime, event_id: str) -> str:
         return _code_from_context(_programmer_context(fact=fact, runtime=runtime, event_id=event_id))
-
-
-def build_programmer_prompt(*, context: dict[str, object]) -> list[dict[str, str]]:
-    """Frozen Qwen-Coder prompt: programming, not visual semantic inference."""
-
-    specification = """You are the Coding Programmer in a persistent visual world-memory Fast Path.
-The visual Grounder has already supplied a typed candidate fact. Do not reinterpret it, rename its entity or component, or infer any unobserved state. Compile the supplied fields into exactly one executable State Patch.
-
-Return exactly one Python literal call with no Markdown and no explanation:
-set_state(event_id=<str>, base_version=<int>, entity=<str>, component=<str>, expected_old=<str-or-dict>, new=<str-or-dict>)
-
-All six fields are mandatory. Copy their values exactly. expected_old and new must be Python literals; string values must be quoted. No other functions, imports, variables, comments, code fences, or prose are permitted."""
-    payload = json.dumps(context, ensure_ascii=False, sort_keys=True)
-    return [
-        {"role": "system", "content": specification},
-        {"role": "user", "content": f"Compile this public grounded transition and current Runtime context:\n{payload}"},
-    ]
-
-
-class QwenCoderWorldCodeProgrammer:
-    """Frozen Qwen2.5-Coder agent that writes one constrained State Patch."""
-
-    name = "qwen2.5-coder-world-programmer"
-
-    def __init__(self, *, model_path: str | Path, max_new_tokens: int = 192, device: str = "cuda") -> None:
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-
-        torch.backends.cudnn.enabled = False
-        self._torch = torch
-        self.model_path = Path(model_path).resolve()
-        if not self.model_path.is_dir():
-            raise FileNotFoundError(f"Coding Programmer model path does not exist: {self.model_path}")
-        self.max_new_tokens = max_new_tokens
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_path, torch_dtype="auto", device_map={"": device}, local_files_only=True
-        ).eval()
-        self.device = device
-
-    def propose(self, *, fact: GrounderFact, runtime: ActiveStateRuntime, event_id: str) -> str:
-        context = _programmer_context(fact=fact, runtime=runtime, event_id=event_id)
-        messages = build_programmer_prompt(context=context)
-        text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        tokens = self.tokenizer(text, return_tensors="pt").to(self.device)
-        with self._torch.inference_mode():
-            generated = self.model.generate(
-                **tokens,
-                max_new_tokens=self.max_new_tokens,
-                do_sample=False,
-                pad_token_id=self.tokenizer.eos_token_id,
-            )
-        output = generated[0, tokens.input_ids.shape[1] :]
-        return self.tokenizer.decode(output, skip_special_tokens=True).strip()
 
 
 class GroundedPatchAuditor:
